@@ -104,25 +104,26 @@
 <body>
 
 <header>
-  <h1>🌐 SOA Lab — User System</h1>
+  <h1> SOA Lab — User System</h1>
   <span id="loggedUser">Not logged in</span>
 </header>
 
 <!-- Service status bar -->
 <div id="statusBar">
   <span>Services:</span>
-  <span id="soapStatus" class="statusBadge loading">⏳ SOAP :8080 …</span>
-  <span id="jsonStatus" class="statusBadge loading">⏳ JSON :8081 …</span>
-  <span id="fileStatus" class="statusBadge loading">⏳ FILE :8082 …</span>
+  <span id="soapStatus" class="statusBadge loading"> SOAP :8080 …</span>
+  <span id="jsonStatus" class="statusBadge loading"> JSON :8081 …</span>
+  <span id="fileStatus" class="statusBadge loading"> FILE :8082 …</span>
+  <span id="serverInfo" style="margin-left:8px; color:#aaa; font-size:0.75rem;"></span>
   <button id="refreshBtn" onclick="checkServices()">↻ Refresh</button>
 </div>
 
 <!-- Nav tabs -->
 <nav>
-  <button id="tab-register" class="active"    onclick="showTab('register')">📝 Register</button>
-  <button id="tab-login"                       onclick="showTab('login')">🔑 Login</button>
-  <button id="tab-profile" class="hidden"      onclick="showTab('profile')">👤 Profile</button>
-  <button id="tab-files"                       onclick="showTab('files')">🖼 Files</button>
+  <button id="tab-register" class="active"    onclick="showTab('register')"> Register</button>
+  <button id="tab-login"                       onclick="showTab('login')"> Login</button>
+  <button id="tab-profile" class="hidden"      onclick="showTab('profile')"> Profile</button>
+  <button id="tab-files"                       onclick="showTab('files')"> Files</button>
 </nav>
 
 <main>
@@ -168,8 +169,8 @@
       <label>Phone</label>
       <input id="pPhone" placeholder="+976 99001234">
 
-      <button class="btn"        onclick="saveProfile()">💾 Save Profile</button>
-      <button class="btn secondary" onclick="loadProfile()" style="margin-top:8px">🔄 Reload Profile</button>
+      <button class="btn"        onclick="saveProfile()"> Save Profile</button>
+      <button class="btn secondary" onclick="loadProfile()" style="margin-top:8px"> Reload Profile</button>
 
       <div id="profileAlert" class="alert"></div>
 
@@ -180,22 +181,22 @@
         <div class="profileRow"><span class="lbl">Email</span> <span class="val" id="dEmail">—</span></div>
         <div class="profileRow"><span class="lbl">Bio</span>   <span class="val" id="dBio">—</span></div>
         <div class="profileRow"><span class="lbl">Phone</span> <span class="val" id="dPhone">—</span></div>
-        <button class="btn danger" onclick="deleteProfile()" style="margin-top:12px">🗑 Delete Profile</button>
+        <button class="btn danger" onclick="deleteProfile()" style="margin-top:12px"> Delete Profile</button>
       </div>
 
-      <button class="btn secondary" onclick="doLogout()" style="margin-top:20px">🚪 Logout</button>
+      <button class="btn secondary" onclick="doLogout()" style="margin-top:20px"> Logout</button>
     </div>
   </section>
 
   <!-- Files -->
   <section id="files">
     <div class="card">
-      <h2>🖼 Image Upload</h2>
+      <h2> Image Upload</h2>
 
       <label>Зураг сонгох (PNG, JPG, GIF, WEBP)</label>
       <input type="file" id="fileInput" accept="image/*" style="padding:6px">
 
-      <button class="btn" onclick="uploadFile()" style="margin-top:12px">⬆ Upload</button>
+      <button class="btn" onclick="uploadFile()" style="margin-top:12px"> Upload</button>
       <div id="fileAlert" class="alert"></div>
 
       <div id="uploadedPreview" style="display:none; margin-top:16px; text-align:center">
@@ -205,8 +206,8 @@
       </div>
 
       <hr style="margin:20px 0; border:none; border-top:1px solid #eee;">
-      <h2>📂 Uploaded Images</h2>
-      <button class="btn secondary" onclick="loadFiles()" style="margin-top:0">🔄 Load List</button>
+      <h2> Uploaded Images</h2>
+      <button class="btn secondary" onclick="loadFiles()" style="margin-top:0"> Load List</button>
       <div id="fileList" style="margin-top:14px; display:flex; flex-wrap:wrap; gap:10px;"></div>
     </div>
   </section>
@@ -214,8 +215,8 @@
 </main>
 
 <script>
-const SOAP_URL = "http://localhost:8080";
-const JSON_URL = "http://localhost:8081";
+const SOAP_URL = "http://192.34.59.227:8080/";
+const JSON_URL = "https://jellyfish-app-qz4dj.ondigitalocean.app/";
 const FILE_URL = "http://localhost:8082";
 
 // ─────────────────── State ────────────────────────────────────────────────
@@ -240,27 +241,27 @@ function restoreSession() {
 
 // ─────────────────── Service health check ─────────────────────────────────
 async function checkServices() {
-  setStatus("soapStatus", "loading", "⏳ SOAP :8080 …");
-  setStatus("jsonStatus",  "loading", "⏳ JSON :8081 …");
+  setStatus("soapStatus", "loading", " SOAP :8080 …");
+  setStatus("jsonStatus",  "loading", " JSON :8081 …");
 
   // SOAP health
   try {
     const r = await fetchWithTimeout(SOAP_URL + "/health", 4000);
     const txt = await r.text();
-    if (r.ok) setStatus("soapStatus", "ok",  "✅ SOAP :8080 — " + txt);
-    else       setStatus("soapStatus", "err", "❌ SOAP :8080 — " + txt);
+    if (r.ok) setStatus("soapStatus", "ok",  " SOAP :8080 — " + txt);
+    else       setStatus("soapStatus", "err", " SOAP :8080 — " + txt);
   } catch(e) {
-    setStatus("soapStatus", "err", "❌ SOAP :8080 — Cannot connect");
+    setStatus("soapStatus", "err", " SOAP :8080 — Cannot connect");
   }
 
   // JSON health
   try {
     const r = await fetchWithTimeout(JSON_URL + "/health", 4000);
     const txt = await r.text();
-    if (r.ok) setStatus("jsonStatus", "ok",  "✅ JSON :8081 — " + txt);
-    else       setStatus("jsonStatus", "err", "❌ JSON :8081 — " + txt);
+    if (r.ok) setStatus("jsonStatus", "ok",  " JSON :8081 — " + txt);
+    else       setStatus("jsonStatus", "err", " JSON :8081 — " + txt);
   } catch(e) {
-    setStatus("jsonStatus", "err", "❌ JSON :8081 — Cannot connect");
+    setStatus("jsonStatus", "err", " JSON :8081 — Cannot connect");
   }
 
   // File Manager health
@@ -268,10 +269,10 @@ async function checkServices() {
   try {
     const r = await fetchWithTimeout(FILE_URL + "/health", 4000);
     const txt = await r.text();
-    if (r.ok) setStatus("fileStatus", "ok",  "✅ FILE :8082 — " + txt);
-    else       setStatus("fileStatus", "err", "❌ FILE :8082 — " + txt);
+    if (r.ok) setStatus("fileStatus", "ok",  " FILE :8082 — " + txt);
+    else       setStatus("fileStatus", "err", " FILE :8082 — " + txt);
   } catch(e) {
-    setStatus("fileStatus", "err", "❌ FILE :8082 — Cannot connect");
+    setStatus("fileStatus", "err", " FILE :8082 — Cannot connect");
   }
 }
 
@@ -326,16 +327,16 @@ async function doRegister() {
     });
     const text = await res.text();
     if (res.ok) {
-      showAlert("regAlert", "success", "✅ " + text + " — You can now login.");
+      showAlert("regAlert", "success", " " + text + " — You can now login.");
       document.getElementById("regUsername").value = "";
       document.getElementById("regPassword").value = "";
     } else if (res.status === 409) {
-      showAlert("regAlert", "error", "❌ Username already exists. Try a different one.");
+      showAlert("regAlert", "error", " Username already exists. Try a different one.");
     } else {
-      showAlert("regAlert", "error", "❌ " + text);
+      showAlert("regAlert", "error", " " + text);
     }
   } catch(e) {
-    showAlert("regAlert", "error", "❌ Cannot reach SOAP service (port 8080). Is it running?");
+    showAlert("regAlert", "error", " Cannot reach SOAP service (port 8080). Is it running?");
   }
 }
 
@@ -360,7 +361,7 @@ async function doLogin() {
 
     if (!res.ok) {
       // 401 = wrong credentials
-      showAlert("loginAlert", "error", "❌ " + text);
+      showAlert("loginAlert", "error", " " + text);
       return;
     }
 
@@ -381,7 +382,7 @@ async function doLogin() {
 
     setTimeout(() => showTab("profile"), 1200);
   } catch(e) {
-    showAlert("loginAlert", "error", "❌ Cannot reach SOAP service (port 8080). Is it running?");
+    showAlert("loginAlert", "error", " Cannot reach SOAP service (port 8080). Is it running?");
   }
 }
 
@@ -419,12 +420,12 @@ async function saveProfile() {
     if (res.status === 401) {
       let errText = "";
       try { const j = await res.json(); errText = j.error || ""; } catch(_) { errText = await res.text(); }
-      showAlert("profileAlert", "error", "❌ Unauthorized: " + errText + " — Please login again.");
+      showAlert("profileAlert", "error", " Unauthorized: " + errText + " — Please login again.");
       return;
     }
     if (!res.ok) {
       const errText = await res.text();
-      showAlert("profileAlert", "error", "❌ Error: " + errText);
+      showAlert("profileAlert", "error", " Error: " + errText);
       return;
     }
 
@@ -432,16 +433,16 @@ async function saveProfile() {
     currentProfileId = data.id;
     localStorage.setItem("profileId", data.id);
     displayProfile(data);
-    showAlert("profileAlert", "success", "✅ Profile saved successfully! (ID: " + data.id + ")");
+    showAlert("profileAlert", "success", " Profile saved successfully! (ID: " + data.id + ")");
   } catch(e) {
-    showAlert("profileAlert", "error", "❌ Cannot reach JSON service (port 8081). Is it running?");
+    showAlert("profileAlert", "error", " Cannot reach JSON service (port 8081). Is it running?");
   }
 }
 
 async function loadProfile() {
   clearAlert("profileAlert");
   if (!currentProfileId) {
-    showAlert("profileAlert", "info", "ℹ️ No saved profile found. Fill in the form and save.");
+    showAlert("profileAlert", "info", " No saved profile found. Fill in the form and save.");
     return;
   }
   try {
@@ -449,17 +450,17 @@ async function loadProfile() {
       headers: { "Authorization": currentToken }
     });
     if (res.status === 401) {
-      showAlert("profileAlert", "error", "❌ Session expired. Please login again.");
+      showAlert("profileAlert", "error", " Session expired. Please login again.");
       return;
     }
     if (res.status === 404) {
-      showAlert("profileAlert", "error", "❌ Profile not found (may have been deleted).");
+      showAlert("profileAlert", "error", " Profile not found (may have been deleted).");
       currentProfileId = null;
       localStorage.removeItem("profileId");
       return;
     }
     if (!res.ok) {
-      showAlert("profileAlert", "error", "❌ Error loading profile.");
+      showAlert("profileAlert", "error", " Error loading profile.");
       return;
     }
     const data = await res.json();
@@ -469,9 +470,9 @@ async function loadProfile() {
     document.getElementById("pEmail").value = data.email || "";
     document.getElementById("pBio").value   = data.bio   || "";
     document.getElementById("pPhone").value = data.phone || "";
-    showAlert("profileAlert", "success", "✅ Profile loaded.");
+    showAlert("profileAlert", "success", " Profile loaded.");
   } catch(e) {
-    showAlert("profileAlert", "error", "❌ Cannot reach JSON service (port 8081). Is it running?");
+    showAlert("profileAlert", "error", " Cannot reach JSON service (port 8081). Is it running?");
   }
 }
 
@@ -483,17 +484,17 @@ async function deleteProfile() {
       method: "DELETE",
       headers: { "Authorization": currentToken }
     });
-    if (res.status === 401) { showAlert("profileAlert", "error", "❌ Unauthorized."); return; }
-    if (!res.ok) { showAlert("profileAlert", "error", "❌ Delete failed."); return; }
+    if (res.status === 401) { showAlert("profileAlert", "error", " Unauthorized."); return; }
+    if (!res.ok) { showAlert("profileAlert", "error", " Delete failed."); return; }
 
     currentProfileId = null;
     localStorage.removeItem("profileId");
     document.getElementById("profileDisplay").classList.remove("show");
     document.getElementById("pName").value = document.getElementById("pEmail").value =
     document.getElementById("pBio").value  = document.getElementById("pPhone").value = "";
-    showAlert("profileAlert", "success", "✅ Profile deleted.");
+    showAlert("profileAlert", "success", " Profile deleted.");
   } catch(e) {
-    showAlert("profileAlert", "error", "❌ Cannot reach JSON service (port 8081).");
+    showAlert("profileAlert", "error", " Cannot reach JSON service (port 8081).");
   }
 }
 
@@ -520,17 +521,17 @@ async function uploadFile() {
     const res = await fetch(FILE_URL + "/files/upload", { method: "POST", body: formData });
     const data = await res.json();
     if (!res.ok) {
-      showAlert("fileAlert", "error", "❌ " + (data.error || "Upload failed"));
+      showAlert("fileAlert", "error", " " + (data.error || "Upload failed"));
       return;
     }
-    showAlert("fileAlert", "success", "✅ Uploaded: " + data.originalName);
+    showAlert("fileAlert", "success", " Uploaded: " + data.originalName);
     document.getElementById("uploadedImg").src = FILE_URL + data.url;
     document.getElementById("uploadedFilename").textContent = "URL: " + FILE_URL + data.url;
     document.getElementById("uploadedPreview").style.display = "block";
     fileInput.value = "";
     loadFiles();
   } catch(e) {
-    showAlert("fileAlert", "error", "❌ Cannot reach File Manager service (port 8082). Is it running?");
+    showAlert("fileAlert", "error", " Cannot reach File Manager service (port 8082). Is it running?");
   }
 }
 
@@ -569,7 +570,7 @@ async function loadFiles() {
       container.appendChild(wrap);
     });
   } catch(e) {
-    container.innerHTML = "<span style='color:#c00;font-size:0.85rem'>❌ Cannot reach File Manager service.</span>";
+    container.innerHTML = "<span style='color:#c00;font-size:0.85rem'> Cannot reach File Manager service.</span>";
   }
 }
 
@@ -583,7 +584,7 @@ function doLogout() {
   document.getElementById("tab-profile").classList.add("hidden");
   document.getElementById("profileDisplay").classList.remove("show");
   showTab("login");
-  showAlert("loginAlert", "info", "ℹ️ Logged out successfully.");
+  showAlert("loginAlert", "info", " Logged out successfully.");
 }
 </script>
 </body>
