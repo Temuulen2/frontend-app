@@ -111,9 +111,9 @@
 <!-- Service status bar -->
 <div id="statusBar">
   <span>Services:</span>
-  <span id="soapStatus" class="statusBadge loading"> SOAP :8080 …</span>
-  <span id="jsonStatus" class="statusBadge loading"> JSON :8081 …</span>
-  <span id="fileStatus" class="statusBadge loading"> FILE :8082 …</span>
+  <span id="soapStatus" class="statusBadge loading"> SOAP …</span>
+  <span id="jsonStatus" class="statusBadge loading"> JSON …</span>
+  <span id="fileStatus" class="statusBadge loading"> FILE …</span>
   <span id="serverInfo" style="margin-left:8px; color:#aaa; font-size:0.75rem;"></span>
   <button id="refreshBtn" onclick="checkServices()">↻ Refresh</button>
 </div>
@@ -181,6 +181,10 @@
         <div class="profileRow"><span class="lbl">Email</span> <span class="val" id="dEmail">—</span></div>
         <div class="profileRow"><span class="lbl">Bio</span>   <span class="val" id="dBio">—</span></div>
         <div class="profileRow"><span class="lbl">Phone</span> <span class="val" id="dPhone">—</span></div>
+        <div class="profileRow" id="photoRow" style="display:none">
+          <span class="lbl">Photo</span>
+          <span class="val"><img id="dPhoto" src="" alt="profile photo" style="max-width:120px;border-radius:8px;border:1px solid #ddd;"></span>
+        </div>
         <button class="btn danger" onclick="deleteProfile()" style="margin-top:12px"> Delete Profile</button>
       </div>
 
@@ -215,9 +219,12 @@
 </main>
 
 <script>
-const SOAP_URL = "http://192.34.59.227:8080/";
-const JSON_URL = "https://jellyfish-app-qz4dj.ondigitalocean.app/";
-const FILE_URL = "http://localhost:8082";
+// ── Service URLs ─────────────────────────────────────────────────────────
+const SOAP_URL = "https://soa-soap-service-zdwzn.ondigitalocean.app";
+const JSON_URL = "https://soa-json-service-7kfhj.ondigitalocean.app";
+const FILE_URL = "https://soa-file-manager-service-8hsqq.ondigitalocean.app";
+// Spaces CDN base for displaying images
+const SPACES_CDN_BASE = "https://temuulen-file.sgp1.digitaloceanspaces.com";
 
 // ─────────────────── State ────────────────────────────────────────────────
 let currentToken    = localStorage.getItem("token")    || null;
@@ -241,38 +248,38 @@ function restoreSession() {
 
 // ─────────────────── Service health check ─────────────────────────────────
 async function checkServices() {
-  setStatus("soapStatus", "loading", " SOAP :8080 …");
-  setStatus("jsonStatus",  "loading", " JSON :8081 …");
+  setStatus("soapStatus", "loading", " SOAP …");
+  setStatus("jsonStatus",  "loading", " JSON …");
+  setStatus("fileStatus",  "loading", "⏳ FILE …");
 
   // SOAP health
   try {
-    const r = await fetchWithTimeout(SOAP_URL + "/health", 4000);
+    const r = await fetchWithTimeout(SOAP_URL + "/health", 5000);
     const txt = await r.text();
-    if (r.ok) setStatus("soapStatus", "ok",  " SOAP :8080 — " + txt);
-    else       setStatus("soapStatus", "err", " SOAP :8080 — " + txt);
+    if (r.ok) setStatus("soapStatus", "ok",  " SOAP — " + txt);
+    else       setStatus("soapStatus", "err", " SOAP — " + txt);
   } catch(e) {
-    setStatus("soapStatus", "err", " SOAP :8080 — Cannot connect");
+    setStatus("soapStatus", "err", " SOAP — Cannot connect");
   }
 
   // JSON health
   try {
-    const r = await fetchWithTimeout(JSON_URL + "/health", 4000);
+    const r = await fetchWithTimeout(JSON_URL + "/health", 5000);
     const txt = await r.text();
-    if (r.ok) setStatus("jsonStatus", "ok",  " JSON :8081 — " + txt);
-    else       setStatus("jsonStatus", "err", " JSON :8081 — " + txt);
+    if (r.ok) setStatus("jsonStatus", "ok",  " JSON — " + txt);
+    else       setStatus("jsonStatus", "err", " JSON — " + txt);
   } catch(e) {
-    setStatus("jsonStatus", "err", " JSON :8081 — Cannot connect");
+    setStatus("jsonStatus", "err", " JSON — Cannot connect");
   }
 
   // File Manager health
-  setStatus("fileStatus", "loading", "⏳ FILE :8082 …");
   try {
-    const r = await fetchWithTimeout(FILE_URL + "/health", 4000);
+    const r = await fetchWithTimeout(FILE_URL + "/health", 5000);
     const txt = await r.text();
-    if (r.ok) setStatus("fileStatus", "ok",  " FILE :8082 — " + txt);
-    else       setStatus("fileStatus", "err", " FILE :8082 — " + txt);
+    if (r.ok) setStatus("fileStatus", "ok",  " FILE — " + txt);
+    else       setStatus("fileStatus", "err", " FILE — " + txt);
   } catch(e) {
-    setStatus("fileStatus", "err", " FILE :8082 — Cannot connect");
+    setStatus("fileStatus", "err", " FILE — Cannot connect");
   }
 }
 
@@ -504,56 +511,117 @@ function displayProfile(data) {
   document.getElementById("dEmail").textContent = data.email || "—";
   document.getElementById("dBio").textContent   = data.bio   || "—";
   document.getElementById("dPhone").textContent = data.phone || "—";
+  if (data.photoUrl) {
+    document.getElementById("dPhoto").src = data.photoUrl;
+    document.getElementById("photoRow").style.display = "flex";
+  } else {
+    document.getElementById("photoRow").style.display = "none";
+  }
   document.getElementById("profileDisplay").classList.add("show");
 }
 
-// ─────────────────── File Manager ─────────────────────────────────────────
+// ─────────────────── File Manager — via File Manager Service ──────────────
 async function uploadFile() {
+  if (!currentToken) {
+    showAlert("fileAlert", "error", " Please login first to upload files.");
+    return;
+  }
   const fileInput = document.getElementById("fileInput");
   const file = fileInput.files[0];
   if (!file) {
     showAlert("fileAlert", "error", "Please select an image file.");
     return;
   }
-  const formData = new FormData();
-  formData.append("file", file);
+  if (!file.type.startsWith("image/")) {
+    showAlert("fileAlert", "error", "Only image files are allowed.");
+    return;
+  }
+
+  showAlert("fileAlert", "info", "⏳ Uploading…");
   try {
-    const res = await fetch(FILE_URL + "/files/upload", { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) {
-      showAlert("fileAlert", "error", " " + (data.error || "Upload failed"));
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(FILE_URL + "/files/upload", {
+      method: "POST",
+      headers: { "Authorization": currentToken },
+      body: formData
+    });
+
+    if (res.status === 401) {
+      showAlert("fileAlert", "error", " Unauthorized — Please login again.");
       return;
     }
-    showAlert("fileAlert", "success", " Uploaded: " + data.originalName);
-    document.getElementById("uploadedImg").src = FILE_URL + data.url;
-    document.getElementById("uploadedFilename").textContent = "URL: " + FILE_URL + data.url;
+    if (!res.ok) {
+      const err = await res.text();
+      showAlert("fileAlert", "error", "❌ Upload failed: " + err);
+      return;
+    }
+
+    const data = await res.json();
+    const publicUrl = data.url;
+    showAlert("fileAlert", "success", "✅ Uploaded: " + (data.originalName || file.name));
+    document.getElementById("uploadedImg").src = publicUrl;
+    document.getElementById("uploadedFilename").textContent = "URL: " + publicUrl;
     document.getElementById("uploadedPreview").style.display = "block";
     fileInput.value = "";
+
+    // Save photo URL to user profile
+    if (currentProfileId) {
+      try {
+        const profileRes = await fetch(JSON_URL + "/users/" + currentProfileId, {
+          headers: { "Authorization": currentToken }
+        });
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          profile.photoUrl = publicUrl;
+          await fetch(JSON_URL + "/users/" + currentProfileId, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", "Authorization": currentToken },
+            body: JSON.stringify(profile)
+          });
+        }
+      } catch(_) { /* non-critical */ }
+    }
+
     loadFiles();
   } catch(e) {
-    showAlert("fileAlert", "error", " Cannot reach File Manager service (port 8082). Is it running?");
+    showAlert("fileAlert", "error", "❌ Upload failed: " + e.message);
   }
 }
 
 async function loadFiles() {
   const container = document.getElementById("fileList");
   container.innerHTML = "<span style='color:#888;font-size:0.85rem'>Loading…</span>";
+
+  if (!currentToken) {
+    container.innerHTML = "<span style='color:#aaa;font-size:0.85rem'> Login to view uploaded files.</span>";
+    return;
+  }
+
   try {
-    const res = await fetch(FILE_URL + "/files");
-    const filenames = await res.json();
-    if (filenames.length === 0) {
+    const res = await fetch(FILE_URL + "/files", {
+      headers: { "Authorization": currentToken }
+    });
+    if (!res.ok) {
+      container.innerHTML = "<span style='color:#c00;font-size:0.85rem'>❌ Error: " + res.status + "</span>";
+      return;
+    }
+    const filenames = await res.json(); // array of filename strings
+    if (!filenames || filenames.length === 0) {
       container.innerHTML = "<span style='color:#aaa;font-size:0.85rem'>No files uploaded yet.</span>";
       return;
     }
     container.innerHTML = "";
     filenames.forEach(name => {
+      const url = SPACES_CDN_BASE + "/" + name;
       const wrap = document.createElement("div");
       wrap.style = "position:relative;display:inline-block;";
       const img = document.createElement("img");
-      img.src = FILE_URL + "/files/" + name;
+      img.src = url;
       img.title = name;
       img.style = "width:100px;height:100px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;";
-      img.onclick = () => window.open(FILE_URL + "/files/" + name, "_blank");
+      img.onclick = () => window.open(url, "_blank");
       const del = document.createElement("button");
       del.textContent = "✕";
       del.style = "position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;line-height:1;";
@@ -561,16 +629,22 @@ async function loadFiles() {
         e.stopPropagation();
         if (!confirm("Delete " + name + "?")) return;
         try {
-          const r = await fetch(FILE_URL + "/files/" + name, { method: "DELETE" });
+          const r = await fetch(FILE_URL + "/files/" + encodeURIComponent(name), {
+            method: "DELETE",
+            headers: { "Authorization": currentToken }
+          });
           if (r.ok) loadFiles();
-        } catch(_) {}
+          else alert("Delete failed: " + r.status);
+        } catch(err) {
+          alert("Delete failed: " + err.message);
+        }
       };
       wrap.appendChild(img);
       wrap.appendChild(del);
       container.appendChild(wrap);
     });
   } catch(e) {
-    container.innerHTML = "<span style='color:#c00;font-size:0.85rem'> Cannot reach File Manager service.</span>";
+    container.innerHTML = "<span style='color:#c00;font-size:0.85rem'>❌ Cannot reach File Manager: " + e.message + "</span>";
   }
 }
 
