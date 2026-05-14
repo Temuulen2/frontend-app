@@ -220,9 +220,21 @@
 
 <script>
 // ── Service URLs ─────────────────────────────────────────────────────────
-const SOAP_URL = "https://soa-soap-service-zdwzn.ondigitalocean.app";
-const JSON_URL = "https://soa-json-service-7kfhj.ondigitalocean.app";
-const FILE_URL = "https://soa-file-manager-service-8hsqq.ondigitalocean.app";
+// Lab 08: API Gateway deploy хийсний дараа доорх GATEWAY_URL-г бөглөнө.
+// DO App Platform → api-gateway → App URL-г хуулж тавина.
+// Жишээ: "https://soa-api-gateway-xxxxx.ondigitalocean.app"
+//
+// ⚠️  GATEWAY_URL хоосон ("") байвал Lab 07-ийн шууд холболт ажиллана.
+//     Gateway deploy хийгдсэний дараа л бөглөнө!
+const GATEWAY_URL = "https://starfish-app-csthw.ondigitalocean.app";
+
+const _gw = GATEWAY_URL.replace(/\/$/, '');
+
+// Gateway идэвхтэй бол бүх хүсэлт нэг URL-оор явна.
+// Gateway хоосон бол шууд Lab 07-ийн URL-уудаар явна.
+const SOAP_URL = _gw ? _gw + "/api/soap" : "https://soa-soap-service-zdwzn.ondigitalocean.app";
+const JSON_URL = _gw ? _gw + "/api"      : "https://soa-json-service-7kfhj.ondigitalocean.app";
+const FILE_URL = _gw ? _gw + "/api"      : "https://soa-file-manager-service-8hsqq.ondigitalocean.app";
 // Spaces CDN base for displaying images
 const SPACES_CDN_BASE = "https://temuulen-file.sgp1.digitaloceanspaces.com";
 
@@ -252,7 +264,26 @@ async function checkServices() {
   setStatus("jsonStatus",  "loading", " JSON …");
   setStatus("fileStatus",  "loading", "⏳ FILE …");
 
-  // SOAP health
+  // ── Gateway горим: нэг /health дуудлагаар бүх сервисийн байдал ирнэ ─────
+  if (_gw) {
+    try {
+      const r    = await fetchWithTimeout(_gw + "/health", 8000);
+      const data = await r.json();
+      const ok   = (v) => v && !v.startsWith('DOWN') && !v.startsWith('HTTP');
+      const rd   = data.redis === 'ready' ? ' · Redis ✓' : ' · Redis ✗';
+      setStatus("soapStatus", ok(data.services?.soap) ? "ok" : "err", " SOAP — " + (data.services?.soap || '?'));
+      setStatus("jsonStatus",  ok(data.services?.json) ? "ok" : "err", " JSON — " + (data.services?.json || '?'));
+      setStatus("fileStatus",  ok(data.services?.file) ? "ok" : "err", " FILE — " + (data.services?.file || '?') + rd);
+    } catch(e) {
+      const msg = " Gateway — Cannot connect";
+      setStatus("soapStatus", "err", msg);
+      setStatus("jsonStatus",  "err", msg);
+      setStatus("fileStatus",  "err", msg);
+    }
+    return;
+  }
+
+  // ── Шууд горим (GATEWAY_URL хоосон үед): сервис тус бүрийг шалгана ──────
   try {
     const r = await fetchWithTimeout(SOAP_URL + "/health", 5000);
     const txt = await r.text();
@@ -262,7 +293,6 @@ async function checkServices() {
     setStatus("soapStatus", "err", " SOAP — Cannot connect");
   }
 
-  // JSON health
   try {
     const r = await fetchWithTimeout(JSON_URL + "/health", 5000);
     const txt = await r.text();
@@ -272,7 +302,6 @@ async function checkServices() {
     setStatus("jsonStatus", "err", " JSON — Cannot connect");
   }
 
-  // File Manager health
   try {
     const r = await fetchWithTimeout(FILE_URL + "/health", 5000);
     const txt = await r.text();
